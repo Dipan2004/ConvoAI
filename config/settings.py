@@ -9,8 +9,10 @@ class Settings(BaseSettings):
 
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    model_name: str = "qwen/qwen-2.5-72b-instruct"
-    model_fallback: str = "minimax/minimax-01"
+    gemini_api_key: str = ""
+    gemini_base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/"
+    llm_model: str = "openai/gpt-oss-20b:free"
+    llm_fallback: str = "google/gemini-2.0-flash:free"
     llm_timeout_seconds: int = 30
     llm_max_retries: int = 2
     llm_max_tokens: int = 1000
@@ -41,9 +43,6 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 20
 
     prompts_dir: str = "./prompts"
-
-    langsmith_api_key: Optional[str] = None
-    langsmith_project: Optional[str] = None
 
     class Config:
         env_file = ".env"

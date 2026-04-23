@@ -12,19 +12,19 @@ class NotificationTool:
     def notify_lead(self, record: LeadRecord) -> bool:
         try:
             self._send_slack(record)
-            logger.info("lead_notification_sent", email=record.lead_data.email)
+            logger.info({"event": "lead_notification_sent", "email": record.lead_data.email})
             return True
         except Exception as exc:
-            logger.error("lead_notification_failed", error=str(exc))
+            logger.error({"event": "lead_notification_failed", "error": str(exc)})
             return False
 
     def notify_error(self, session_id: str, error_code: str, detail: str) -> None:
-        logger.error(
-            "system_error_notification",
-            session_id=session_id,
-            error_code=error_code,
-            detail=detail,
-        )
+        logger.error({
+            "event": "system_error_notification",
+            "session_id": session_id,
+            "error_code": error_code,
+            "detail": detail,
+        })
 
     def _send_slack(self, record: LeadRecord) -> None:
         pass

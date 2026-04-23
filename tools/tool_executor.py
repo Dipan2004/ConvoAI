@@ -34,22 +34,22 @@ class ToolExecutor:
         except Exception as exc:
             record.success = False
             record.error = str(exc)
-            logger.error(
-                "tool_failed",
-                tool=tool_name,
-                error=str(exc),
-                session_id=state.session_id,
-            )
+            logger.error({
+                "event": "tool_failed",
+                "tool": tool_name,
+                "error": str(exc),
+                "session_id": state.session_id,
+            })
             output = None
         finally:
             record.latency_ms = (time.monotonic() - start) * 1000
             state.tool_calls.append(record)
 
-        logger.info(
-            "tool_executed",
-            tool=tool_name,
-            success=record.success,
-            latency_ms=record.latency_ms,
-            session_id=state.session_id,
-        )
+        logger.info({
+            "event": "tool_executed",
+            "tool": tool_name,
+            "success": record.success,
+            "latency_ms": record.latency_ms,
+            "session_id": state.session_id,
+        })
         return output, state

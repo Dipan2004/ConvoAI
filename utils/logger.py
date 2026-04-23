@@ -17,8 +17,7 @@ class AppLogger:
         self._session_id = session_id
 
     def with_session(self, session_id: str) -> "AppLogger":
-        l = AppLogger(self._name, session_id)
-        return l
+        return AppLogger(self._name, session_id)
 
     def info(self, data: Dict[str, Any]) -> None:
         self._emit("INFO", data)
@@ -79,3 +78,7 @@ class AppLogger:
                 f.write(line + "\n")
         except OSError:
             pass
+
+
+def get_logger(name: str) -> AppLogger:
+    return AppLogger(name)

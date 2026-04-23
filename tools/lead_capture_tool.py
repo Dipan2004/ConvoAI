@@ -10,11 +10,10 @@ class LeadCaptureTool:
 
     def execute(self, record: LeadRecord) -> bool:
         if self._is_duplicate(record.lead_data.email):
-            logger.warning("duplicate_lead", email=record.lead_data.email)
+            logger.warning({"event": "duplicate_lead", "email": record.lead_data.email})
             return False
-
         self._persist(record)
-        logger.info("lead_persisted", email=record.lead_data.email, session_id=record.session_id)
+        logger.info({"event": "lead_persisted", "email": record.lead_data.email, "session_id": record.session_id})
         return True
 
     def _is_duplicate(self, email: str) -> bool:

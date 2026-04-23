@@ -12,13 +12,15 @@ from utils.logger import AppLogger
 logger = AppLogger(__name__)
 
 _COST_PER_1K_INPUT: Dict[str, float] = {
-    "qwen/qwen-2.5-72b-instruct": 0.0009,
-    "minimax/minimax-01": 0.0003,
+    "openai/gpt-oss-20b:free": 0.0,
+    "google/gemini-2.0-flash:free": 0.0,
+    "gemini-2.0-flash": 0.0,
     "default": 0.001,
 }
 _COST_PER_1K_OUTPUT: Dict[str, float] = {
-    "qwen/qwen-2.5-72b-instruct": 0.0009,
-    "minimax/minimax-01": 0.0003,
+    "openai/gpt-oss-20b:free": 0.0,
+    "google/gemini-2.0-flash:free": 0.0,
+    "gemini-2.0-flash": 0.0,
     "default": 0.001,
 }
 
@@ -32,15 +34,21 @@ class LLMService:
         fallback_model: Optional[str] = None,
         api_key: Optional[str] = None,
     ):
-        self._model = model or settings.model_name
-        self._fallback_model = fallback_model or settings.model_fallback
-        self._api_key = api_key or settings.openrouter_api_key
-        self._base_url = settings.openrouter_base_url.rstrip("/")
+        self._model = model or settings.llm_model
+        self._fallback_model = fallback_model or settings.llm_fallback
+        self._openrouter_api_key = api_key or settings.openrouter_api_key
+        self._gemini_api_key = settings.gemini_api_key
+        self._openrouter_base_url = settings.openrouter_base_url.rstrip("/")
+        self._gemini_base_url = settings.gemini_base_url.rstrip("/")
         self._timeout = settings.llm_timeout_seconds
         self._max_tokens = settings.llm_max_tokens
         self._temperature = settings.llm_temperature
         self._parser = JSONParser()
         self._session = self._build_session()
+        self._gemini_session = self._build_gemini_session()
+
+    def _is_gemini_model(self, model: str) -> bool:
+        return model.startswith("google/gemini") or model.startswith("gemini-")
 
     def _build_session(self) -> requests.Session:
         session = requests.Session()
@@ -54,10 +62,26 @@ class LLMService:
         adapter = HTTPAdapter(max_retries=retry)
         session.mount("https://", adapter)
         session.headers.update({
-            "Authorization": f"Bearer {self._api_key}",
+            "Authorization": f"Bearer {self._openrouter_api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://ai-agent-system.internal",
             "X-Title": settings.app_name,
+        })
+        return session
+
+    def _build_gemini_session(self) -> requests.Session:
+        session = requests.Session()
+        retry = Retry(
+            total=2,
+            backoff_factor=1.5,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["POST"],
+            raise_on_status=False,
+        )
+        adapter = HTTPAdapter(max_retries=retry)
+        session.mount("https://", adapter)
+        session.headers.update({
+            "Content-Type": "application/json",
         })
         return session
 
@@ -86,12 +110,6 @@ class LLMService:
         latency_ms = (time.monotonic() - t_start) * 1000
 
         if raw is None:
-            logger.step(
-                "llm_fallback_triggered",
-                session_id=session_id,
-                latency_ms=latency_ms,
-                error="both primary and fallback models failed",
-            )
             return {
                 "content": _FALLBACK_RESPONSE,
                 "parsed": None,
@@ -145,7 +163,15 @@ class LLMService:
         )
 
     def _call(self, payload: Dict[str, Any], session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
-        url = f"{self._base_url}/chat/completions"
+        model = payload.get("model", self._model)
+        
+        if self._is_gemini_model(model):
+            return self._call_gemini(payload, session_id)
+        else:
+            return self._call_openrouter(payload, session_id)
+
+    def _call_openrouter(self, payload: Dict[str, Any], session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        url = f"{self._openrouter_base_url}/chat/completions"
         try:
             response = self._session.post(url, json=payload, timeout=self._timeout)
             if response.status_code != 200:
@@ -159,25 +185,42 @@ class LLMService:
                 return None
             return response.json()
         except requests.exceptions.Timeout:
-            logger.error({
-                "event": "llm_timeout",
-                "model": payload.get("model"),
-                "session_id": session_id,
-            })
+            logger.error({"event": "llm_timeout", "model": payload.get("model"), "session_id": session_id})
             return None
         except requests.exceptions.RequestException as exc:
-            logger.error({
-                "event": "llm_request_error",
-                "error": str(exc),
-                "session_id": session_id,
-            })
+            logger.error({"event": "llm_request_error", "error": str(exc), "session_id": session_id})
             return None
         except Exception as exc:
-            logger.error({
-                "event": "llm_unexpected_error",
-                "error": str(exc),
-                "session_id": session_id,
-            })
+            logger.error({"event": "llm_unexpected_error", "error": str(exc), "session_id": session_id})
+            return None
+
+    def _call_gemini(self, payload: Dict[str, Any], session_id: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        # Extract model name and use it in the URL
+        model = payload.get("model", "gemini-2.0-flash")
+        # Map full model names to Gemini API model IDs
+        model_id = model.replace("google/gemini-", "").replace(":free", "")
+        url = f"{self._gemini_base_url}chat/completions?key={self._gemini_api_key}"
+        
+        try:
+            response = self._gemini_session.post(url, json=payload, timeout=self._timeout)
+            if response.status_code != 200:
+                logger.error({
+                    "event": "llm_http_error",
+                    "status": response.status_code,
+                    "body": response.text[:300],
+                    "model": model,
+                    "session_id": session_id,
+                })
+                return None
+            return response.json()
+        except requests.exceptions.Timeout:
+            logger.error({"event": "llm_timeout", "model": model, "session_id": session_id})
+            return None
+        except requests.exceptions.RequestException as exc:
+            logger.error({"event": "llm_request_error", "error": str(exc), "session_id": session_id})
+            return None
+        except Exception as exc:
+            logger.error({"event": "llm_unexpected_error", "error": str(exc), "session_id": session_id})
             return None
 
     def _build_messages(
