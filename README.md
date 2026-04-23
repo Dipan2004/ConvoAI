@@ -134,6 +134,13 @@ tests/
 7. State is persisted
 
 ---
+## WhatsApp Integration
+
+The system can be integrated with WhatsApp using Meta’s WhatsApp Business API.
+
+A webhook endpoint receives incoming messages, extracts the user's phone number as session_id and message text, then forwards it to the /chat endpoint.
+
+Responses are sent back using the WhatsApp API, maintaining stateful conversations through Redis using the phone number as session identifier.
 
 ## Running the Project
 
