@@ -3,7 +3,7 @@ function formatConfidence(confidence) {
     return 'unknown';
   }
 
-  return `${Math.round(confidence * 100)}%`;
+  return confidence.toFixed(2);
 }
 
 function MessageBubble({ message }) {
@@ -25,9 +25,9 @@ function MessageBubble({ message }) {
 
         {!isUser && message.meta ? (
           <div className="mt-2 px-1 text-xs text-gray-500">
-            <span>intent: {message.meta.intent || 'unknown'}</span>
-            <span className="mx-2 text-gray-300">/</span>
-            <span>confidence: {formatConfidence(message.meta.confidence)}</span>
+            <span>{message.meta.intent || 'unknown'}</span>
+            <span className="mx-1.5 text-gray-300">·</span>
+            <span>{formatConfidence(message.meta.confidence)}</span>
           </div>
         ) : null}
       </div>

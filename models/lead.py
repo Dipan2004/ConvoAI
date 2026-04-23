@@ -6,12 +6,11 @@ from datetime import datetime
 class LeadData(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
-    company: Optional[str] = None
-    use_case: Optional[str] = None
+    platform: Optional[str] = None
     captured_at: Optional[datetime] = None
 
     def is_complete(self) -> bool:
-        return all([self.name, self.email, self.company, self.use_case])
+        return all([self.name, self.email, self.platform])
 
     def missing_fields(self) -> list[str]:
         fields = []
@@ -19,10 +18,8 @@ class LeadData(BaseModel):
             fields.append("name")
         if not self.email:
             fields.append("email")
-        if not self.company:
-            fields.append("company")
-        if not self.use_case:
-            fields.append("use_case")
+        if not self.platform:
+            fields.append("platform")
         return fields
 
     def next_missing_field(self) -> Optional[str]:

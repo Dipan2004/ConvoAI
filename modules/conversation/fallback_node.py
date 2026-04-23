@@ -5,9 +5,8 @@ from utils.logger import AppLogger
 logger = AppLogger(__name__)
 
 _RESPONSE = (
-    "I'm not sure I can help with that. "
-    "I'm best at answering product questions, helping with support, "
-    "or connecting you with our team. What can I help you with?"
+    "I'm best at helping with product details, pricing, or support. "
+    "What would you like to explore?"
 )
 
 

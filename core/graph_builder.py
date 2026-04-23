@@ -9,6 +9,9 @@ logger = AppLogger(__name__)
 
 
 def _route_after_intent(state: Dict[str, Any]) -> str:
+    if state.get("lead_step") and state.get("lead_step") != "complete":
+        return "lead_node"
+
     confidence = state.get("confidence", 0.0)
     intent = state.get("intent", "out_of_scope")
 
@@ -21,7 +24,7 @@ def _route_after_intent(state: Dict[str, Any]) -> str:
     if intent == "lead_capture":
         return "lead_node"
     if intent in ("product_inquiry", "support_request"):
-        if not state.get("flags", {}).get("lead_captured", False):
+        if not state.get("lead_complete", False):
             return "lead_node"
         return "rag_node"
     return "fallback_node"

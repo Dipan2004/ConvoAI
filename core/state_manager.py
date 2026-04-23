@@ -8,10 +8,14 @@ logger = AppLogger(__name__)
 _DEFAULT_STATE: Dict[str, Any] = {
     "intent": None,
     "confidence": 0.0,
+    "lead_complete": False,
+    "lead_step": "complete",
+    "original_query": None,
     "lead_data": {},
     "flags": {
         "lead_captured": False,
         "lead_ready": False,
+        "lead_in_progress": False,
     },
     "rag_context": [],
     "messages": [],
@@ -50,4 +54,5 @@ class StateManager:
         import copy
         state = copy.deepcopy(_DEFAULT_STATE)
         state["session_id"] = session_id
+        state["lead_complete"] = False
         return state

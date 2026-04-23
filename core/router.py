@@ -31,6 +31,11 @@ class Router:
     def route(
         self, state: Dict[str, Any], user_input: str
     ) -> Tuple[Node, Dict[str, Any]]:
+        if state.get("lead_step") and state.get("lead_step") != "complete":
+            state["intent"] = "lead_capture"
+            state["confidence"] = 1.0
+            return self._lead_node, state
+
         state, _ = self._intent_node.execute(state, user_input)
 
         confidence = state.get("confidence", 0.0)
@@ -53,11 +58,18 @@ class Router:
             return self._fallback_node, state
 
         if intent == "lead_capture":
+            if state.get("lead_step") == "complete":
+                state["lead_step"] = "name"
+                state["flags"]["lead_in_progress"] = True
             return self._lead_node, state
 
         if intent in ("product_inquiry", "support_request"):
-            lead_captured = state.get("flags", {}).get("lead_captured", False)
-            if not lead_captured:
+            lead_complete = state.get("lead_complete", False)
+            if not lead_complete:
+                state["original_query"] = state.get("original_query") or user_input
+                if state.get("lead_step") == "complete":
+                    state["lead_step"] = "name"
+                    state["flags"]["lead_in_progress"] = True
                 return self._lead_node, state
             return self._rag_node, state
 

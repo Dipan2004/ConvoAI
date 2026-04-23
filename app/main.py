@@ -91,7 +91,7 @@ def _build_agent() -> Agent:
 
     lead_validator = LeadValidator()
     lead_manager = LeadManager(validator=lead_validator)
-    lead_node = LeadNode(lead_manager=lead_manager)
+    lead_node = LeadNode(lead_manager=lead_manager, rag_node=rag_node)
 
     smalltalk_node = SmallTalkNode(llm_service=llm_service)
     fallback_node = FallbackNode()

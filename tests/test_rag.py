@@ -88,6 +88,14 @@ def test_generator_falls_back_on_low_score():
     assert len(response) > 0
 
 
+def test_generator_uses_medium_score_docs_with_disclaimer():
+    docs = [_make_doc("1", "Pro plan includes 4K export and AI captions.", 0.52)]
+    gen = _make_generator("Pro plan includes 4K export and AI captions.")
+    response = gen.generate("What does the Pro plan include?", docs, history=[])
+    assert "4K" in response
+    assert "limited available data" in response
+
+
 def test_rag_node_full_pipeline():
     docs = [_make_doc("1", "Pro plan costs $49/month with unlimited users.", 0.95)]
     retriever = _make_retriever(docs)
@@ -138,6 +146,7 @@ def run():
         test_generator_returns_response,
         test_generator_falls_back_on_empty_docs,
         test_generator_falls_back_on_low_score,
+        test_generator_uses_medium_score_docs_with_disclaimer,
         test_rag_node_full_pipeline,
         test_rag_node_updates_rag_context,
     ]

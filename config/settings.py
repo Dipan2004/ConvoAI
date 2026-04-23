@@ -36,11 +36,11 @@ class Settings(BaseSettings):
     rag_top_k_dense: int = 10
     rag_top_k_sparse: int = 10
     rag_top_k_final: int = 3
-    rag_min_relevance_score: float = 0.70
+    rag_min_relevance_score: float = 0.45
 
     max_conversation_turns: int = 6
     max_message_length: int = 2000
-    rate_limit_per_minute: int = 20
+    rate_limit_per_minute: int = 100
 
     prompts_dir: str = "./prompts"
 
